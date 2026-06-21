@@ -1,0 +1,208 @@
+% ============================
+% ATUM_ATOM CODEX MASTER DOCUMENT
+% ============================
+\documentclass[12pt,twoside]{book}
+\usepackage[margin=1.25in]{geometry}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{fontspec} % if using XeLaTeX/LuaLaTeX
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+% --- Book title format ---
+\titleformat{\chapter}
+  {\centering\Large\scshape}{\thechapter}{1em}{}
+\titleformat{\section}
+  {\large\bfseries}{\thesection}{0.75em}{}
+\titleformat{\subsection}
+  {\normalsize\itshape}{\thesubsection}{0.5em}{}
+
+\setstretch{1.15}
+
+\title{\textsc{Atum\_Atom}\\The Triadic Seal}
+\author{James Paul Stanley Jr}
+\date{Binding Cycle 2026-06-21}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% ============================
+% PART I: FOUNDATION
+% ============================
+
+\chapter{The Three Pillars}
+
+\section{Pillar I: Manifest (Structure)}
+
+The Manifest defines the structural baseline of the ATUM\_ATOM system.
+It serves as the authoritative record of all linked repositories,
+governance boundaries, and integration points.
+
+\subsection{Definition}
+
+A Manifest is a SHA256-hashed directory structure that captures:
+\begin{itemize}
+  \item Repository names and roles
+  \item Languages and purposes
+  \item Integration status
+  \item Governance boundaries
+\end{itemize}
+
+\subsection{Linked Repositories}
+
+The current Manifest records six active repositories:
+
+\begin{enumerate}
+  \item Phoenix\_Ignition\_TOE — Ceremonial Framework
+  \item Phoenix-2.0-Apex-Edition — Quantum Modeling Engine
+  \item UNI\_VERSE- — Universe-Scale Architecture
+  \item TUA — Unified Theoretical Framework
+  \item TOE — Theory of Everything Research
+  \item Quantum — Quantum Computing Research
+\end{enumerate}
+
+\section{Pillar II: Signature (Integrity)}
+
+The Signature cryptographically attests to the authenticity of the Manifest.
+Using EDDSA, the Operator signs the Manifest to prevent tampering.
+
+\subsection{Cryptographic Method}
+
+Algorithm: EDDSA (EdDSA)
+
+Operator Key: F9B445CFDBA1ECD6ECC1899CB58390F86B642281
+
+Signature Hash: 66FAB65A481E0FE3687CC839B7A331411D8401DA69BA18EE42AA4513B7CA5751
+
+\subsection{Verification}
+
+\begin{verbatim}
+openssl dgst -sha256 -verify pub.pem -signature manifest.sig manifest.txt
+\end{verbatim}
+
+Expected output: \textbf{Verified OK}
+
+\section{Pillar III: Seal (State)}
+
+The Seal captures the state of the Codex at binding time.
+It includes drift detection, repository status, and operator attestation.
+
+\subsection{Contents}
+
+\begin{itemize}
+  \item Timestamp of binding
+  \item Repository activity log
+  \item Drift detection report
+  \item Operator attestation
+  \item SHA256 hash of seal
+\end{itemize}
+
+\subsection{Drift Detection}
+
+Drift occurs when:
+\begin{itemize}
+  \item Repository commits > 10 since last seal
+  \item Repository dormancy > 30 days
+  \item Manifest structure changes without verification
+  \item Unauthorized modifications detected
+\end{itemize}
+
+% ============================
+% PART II: GOVERNANCE
+% ============================
+
+\chapter{Authority Hierarchy}
+
+\section{Operator Authority}
+
+James Paul Stanley Jr is the root Operator of the ATUM\_ATOM system.
+
+\subsection{Responsibilities}
+
+\begin{itemize}
+  \item Monitor monthly binding cycles
+  \item Verify all state changes
+  \item Sign seals with EDDSA key
+  \item Authenticate new integrations
+  \item Report drift detection
+\end{itemize}
+
+\section{Repository Authority}
+
+OD\_Dragon\_Consciousness serves as the Codex Root and central authority.
+
+\subsection{Role}
+
+\begin{itemize}
+  \item Maintain Manifest
+  \item Store canonical seals
+  \item Document governance protocol
+  \item Archive binding history
+\end{itemize}
+
+\chapter{Integration Protocol}
+
+\section{For New Repositories}
+
+\subsection{Registration}
+
+\begin{enumerate}
+  \item Update Manifest with repository entry
+  \item Include role, languages, and purpose
+  \item Update repository count
+\end{enumerate}
+
+\subsection{Local Integration}
+
+\begin{enumerate}
+  \item Create \texttt{.triadic/} directory
+  \item Add \texttt{manifest\_reference.txt}
+  \item Create local governance file
+  \item Commit with integration message
+\end{enumerate}
+
+\subsection{Root Update}
+
+\begin{enumerate}
+  \item Record integration in OD\_Dragon\_Consciousness
+  \item Re-seal the binding
+  \item Document in binding history
+\end{enumerate}
+
+% ============================
+% APPENDICES
+% ============================
+
+\appendix
+
+\chapter{Operator Reference}
+
+\section{Contact Information}
+
+\begin{itemize}
+  \item Name: James Paul Stanley Jr
+  \item Email: infinitysend@outlook.com
+  \item EDDSA Key: F9B445CFDBA1ECD6ECC1899CB58390F86B642281
+\end{itemize}
+
+\chapter{Repository Directory}
+
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Repository} & \textbf{Role} & \textbf{Status} \\
+\hline
+Phoenix\_Ignition\_TOE & Ceremonial Framework & ACTIVE \\
+Phoenix-2.0-Apex-Edition & Quantum Modeling Engine & ACTIVE \\
+UNI\_VERSE- & Universe-Scale Architecture & ACTIVE \\
+TUA & Unified Theoretical Framework & ACTIVE \\
+TOE & Theory of Everything Research & ACTIVE \\
+Quantum & Quantum Computing Research & ACTIVE \\
+\hline
+\end{tabular}
+
+\end{document}

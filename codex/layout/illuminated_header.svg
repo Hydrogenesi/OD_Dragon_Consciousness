@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="220" viewBox="0 0 1200 220">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f5e6b3"/>
+      <stop offset="50%" stop-color="#d4a64a"/>
+      <stop offset="100%" stop-color="#f5e6b3"/>
+    </linearGradient>
+    <linearGradient id="ember" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffb347"/>
+      <stop offset="100%" stop-color="#b22222"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Border -->
+  <rect x="10" y="10" width="1180" height="200" fill="none" stroke="#444" stroke-width="2"/>
+
+  <!-- Side sigils -->
+  <circle cx="90" cy="110" r="40" fill="none" stroke="#666" stroke-width="2"/>
+  <circle cx="1110" cy="110" r="40" fill="none" stroke="#666" stroke-width="2"/>
+
+  <path d="M70 130 L90 70 L110 130 Z" fill="url(#ember)" opacity="0.9"/>
+  <path d="M1090 130 L1110 70 L1130 130 Z" fill="url(#ember)" opacity="0.9"/>
+
+  <!-- Central bar -->
+  <rect x="180" y="70" width="840" height="4" fill="#555"/>
+  <rect x="180" y="146" width="840" height="4" fill="#555"/>
+
+  <!-- Title -->
+  <text x="600" y="120" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="34"
+        fill="url(#gold)"
+        letter-spacing="4">
+    ATUM_ATOM TRIADIC SEAL
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="160" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="16"
+        fill="#777"
+        letter-spacing="3">
+    CODEX ENTRY · BINDING CYCLE 2026-06-21
+  </text>
+</svg>

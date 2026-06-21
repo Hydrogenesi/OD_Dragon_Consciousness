@@ -1,0 +1,92 @@
+% ============================
+% ATUM_ATOM CODEX PAGE LAYOUT
+% ============================
+\documentclass[12pt]{article}
+\usepackage[margin=1.25in]{geometry}
+\usepackage{titlesec}
+\usepackage{setspace}
+\usepackage{fontspec} % if using XeLaTeX/LuaLaTeX
+\usepackage{graphicx}
+\usepackage{tikz}
+
+% --- Typographic hierarchy ---
+\titleformat{\section}
+  {\centering\Large\scshape}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\large\bfseries}{\thesubsection}{0.75em}{}
+\titleformat{\subsubsection}
+  {\normalsize\itshape}{\thesubsubsection}{0.5em}{}
+
+\setstretch{1.15}
+
+\begin{document}
+
+% --- Top sigil band ---
+\begin{center}
+  \vspace*{0.5cm}
+  \begin{tikzpicture}
+    \draw[line width=0.4pt] (-6,0) -- (6,0);
+    \node at (0,0) {\small$\diamond$};
+    \node at (-3,0) {\small$\ast$};
+    \node at (3,0) {\small$\ast$};
+  \end{tikzpicture}
+\end{center}
+
+\vspace{0.75cm}
+
+% --- Title block ---
+\begin{center}
+  {\Large\scshape Atum\_Atom Triadic Seal}\\
+  [0.25cm]
+  {\small Codex Entry: Binding Cycle 2026-06-21}
+\end{center}
+
+\vspace{0.75cm}
+
+% --- Body hierarchy ---
+\section*{Root}
+\noindent\texttt{C:\textbackslash Users\textbackslash Infin\textbackslash OneDrive\textbackslash OD\_Dragon\_Consciousness}
+
+\vspace{0.5cm}
+
+\section*{Pillars of the Triad}
+
+\subsection*{Pillar I: Manifest (Structure)}
+\noindent\textbf{Path:} fixity\_manifest\_20260621\_012302.txt\\
+\textbf{SHA256:} E6C46688C9883703B4F2B324DC3248A4E77E6D751746DCD87A509D1DBB2762D9
+
+\vspace{0.35cm}
+
+\subsection*{Pillar II: Signature (Integrity)}
+\noindent\textbf{Path:} fixity\_manifest\_20260621\_012302.txt.sig\\
+\textbf{SHA256:} 66FAB65A481E0FE3687CC839B7A331411D8401DA69BA18EE42AA4513B7CA5751\\
+\textbf{Verified by:} James Paul Stanley Jr \texttt{<infinitysend@outlook.com>}
+
+\vspace{0.35cm}
+
+\subsection*{Pillar III: Seal v4.1 (State)}
+\noindent\textbf{Path:} seal\_20260621\_103610.txt\\
+\textbf{SHA256:} 58B16B0280F3DF2B4A463A1647AE606E85B11E460FDD7092717A5D4BDF9145FD\\
+\textbf{Drift:} None detected
+
+\vspace{0.5cm}
+
+\section*{Triadic Meta-Seal}
+\noindent\textbf{Path:} triadic\_seal\_20260621\_104332.txt\\
+\textbf{Status:} Triadic-stable (v5)\\
+\textbf{Timestamp:} 2026-06-21T10:43:32.2439408-07:00
+
+\vfill
+
+% --- Bottom sigil band ---
+\begin{center}
+  \begin{tikzpicture}
+    \draw[line width=0.4pt] (-6,0) -- (6,0);
+    \node at (0,0) {\small$\circ$};
+  \end{tikzpicture}
+
+  \vspace{0.2cm}
+  {\small Operator: James Paul Stanley Jr \quad|\quad Key: EDDSA F9B445CFDBA1ECD6ECC1899CB58390F86B642281}
+\end{center}
+
+\end{document}

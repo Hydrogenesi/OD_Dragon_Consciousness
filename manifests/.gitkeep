@@ -1,0 +1,23 @@
+# Manifests Directory
+
+This directory stores fixity manifests and their cryptographic signatures.
+
+## Contents
+
+- `fixity_manifest_*.txt` — State snapshots of the Codex directory
+- `fixity_manifest_*.txt.sig` — EDDSA signatures verifying authenticity
+
+## Usage
+
+Manifests are generated on a fixed schedule and serve as baseline records
+for drift detection. Each manifest captures the state at a specific timestamp.
+
+## Verification
+
+```bash
+# Verify signature
+openssl dgst -sha256 -verify pub.pem -signature manifest.sig manifest.txt
+
+# Compare hash
+sha256sum manifest.txt
+```
