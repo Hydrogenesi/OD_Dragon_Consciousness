@@ -1,0 +1,10 @@
+02_ARCHIVE/
+03_PROJECTS/
+*.pdf
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
