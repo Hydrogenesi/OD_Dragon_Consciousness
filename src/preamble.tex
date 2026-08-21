@@ -1,0 +1,77 @@
+% ============================================================
+% ATUM_ATOM — Shared preamble
+% ============================================================
+% NOTE: This preamble is deliberately pdflatex-safe. The codex
+% layout files under codex/layout/ use fontspec and therefore
+% require XeLaTeX or LuaLaTeX; the arXiv submission in src/ does
+% not, so that it builds under arXiv's default pdflatex path.
+% Do not add fontspec here.
+% ============================================================
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+
+% --- Theorem-like environments ---
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{protocol}[definition]{Protocol}
+
+\theoremstyle{plain}
+\newtheorem{property}[definition]{Property}
+
+\theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+
+% --- Code listings ---
+\lstdefinestyle{shell}{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{black!35},
+  backgroundcolor=\color{black!3},
+  showstringspaces=false,
+  captionpos=b,
+}
+\lstset{style=shell}
+
+% --- Semantic macros for the three pillars ---
+% Used throughout so the vocabulary stays consistent with the
+% codex (codex/book/codex_master.tex, codex/seals/).
+\newcommand{\Manifest}{\textsc{Manifest}}
+\newcommand{\Signature}{\textsc{Signature}}
+\newcommand{\Seal}{\textsc{Seal}}
+\newcommand{\MetaSeal}{\textsc{Meta-Seal}}
+\newcommand{\Operator}{\textsc{Operator}}
+
+% Hash of an object; signature of an object under key k.
+\newcommand{\hash}[1]{\mathrm{H}(#1)}
+\newcommand{\sign}[2]{\mathrm{Sign}_{#2}(#1)}
+
+% Long hex digest, set small so wide tables stay in the margin.
+\newcommand{\digest}[1]{{\ttfamily\scriptsize #1}}
+
+% --- Document metadata (single source of truth) ---
+\newcommand{\bindingcycle}{2026-06-21}
+\newcommand{\atumoperator}{James Paul Stanley Jr}
+\newcommand{\operatorfingerprint}{F9B445CFDBA1ECD6ECC1899CB58390F86B642281}
+\newcommand{\codexroot}{\texttt{Hydrogenesi/OD\_Dragon\_Consciousness}}

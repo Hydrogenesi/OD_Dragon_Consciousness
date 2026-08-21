@@ -1,0 +1,38 @@
+# ============================================================
+# arXiv AutoTeX configuration
+# ============================================================
+# Consumed by arXiv's automated build system. This file must sit
+# at the ROOT of the submission package, which is flat — so the
+# filenames below have no `src/` prefix. ./arxiv-prep.sh copies
+# this file and the sources in src/ into build/arxiv/pkg/ before
+# creating the tarball; do not hand-edit paths to match the
+# repository layout instead.
+#
+# `compiler` must be one of: pdflatex, latex, tex, luatex, xelatex.
+# We use pdflatex — src/preamble.tex is kept free of fontspec
+# precisely so this stays true.
+#
+# `usage` must be one of: toplevel, ignore, append, include.
+# ============================================================
+
+process:
+  compiler: pdflatex
+
+sources:
+  # The document arXiv should compile.
+  - filename: main.tex
+    usage: toplevel
+
+  # Pulled in by \input{preamble}; AutoTeX finds it, listed for clarity.
+  - filename: preamble.tex
+    usage: include
+
+  # arXiv does NOT run BibTeX. The precompiled bibliography is what
+  # actually produces the reference list, so it must ship.
+  - filename: main.bbl
+    usage: include
+
+  # Shipped for provenance only. If AutoTeX tried to process this it
+  # would fail, since a .bib is not a TeX document.
+  - filename: references.bib
+    usage: ignore

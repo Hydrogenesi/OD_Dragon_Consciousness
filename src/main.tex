@@ -1,0 +1,519 @@
+% ============================================================
+% ATUM_ATOM CODEX — arXiv submission, top-level file
+% ============================================================
+% Build:  make pdf          (from repository root)
+% Pack:   ./arxiv-prep.sh   (produces build/arxiv/*.tar.gz)
+%
+% This file is pdflatex-safe. See src/preamble.tex for why.
+% ============================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\input{preamble}
+
+\title{The Triadic Seal: A Three-Pillar Protocol for\\
+       Structure, Attestation, and State in\\
+       Multi-Repository Governance}
+
+\author{\atumoperator\\
+        \texttt{infinitysend@outlook.com}\\
+        \small Hydrogenesi / ATUM\_ATOM Codex Root}
+
+\date{Binding Cycle \bindingcycle}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Distributed research projects routinely span many repositories with no
+single artifact that records what the collection was supposed to contain,
+who vouched for it, or what state it was actually in at a given moment.
+We describe the \emph{Triadic Seal}, a lightweight governance protocol that
+binds three separable concerns --- structure, integrity, and state --- into a
+single verifiable record. The \Manifest{} pillar fixes the authoritative
+inventory of the collection under a content hash; the \Signature{} pillar
+attests to that inventory with a public-key signature from a named operator;
+the \Seal{} pillar snapshots observed repository state and reports drift
+against the previous binding. A \MetaSeal{} consolidates the three into one
+timestamped record committed to an append-only history. We give the
+construction, the monthly binding cycle, the drift predicates, the threat
+model the protocol does and does not address, and a reference implementation
+in the ATUM\_ATOM Codex. The protocol is deliberately modest: it provides
+detection and attribution, not prevention, and its guarantees rest entirely
+on the secrecy of one operator key and the integrity of the commit history.
+\end{abstract}
+
+\tableofcontents
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+A research program that outgrows a single repository acquires a problem it
+did not have before: there is no longer any artifact that says what the
+program consists of. The set of repositories becomes tacit knowledge. When a
+repository is renamed, abandoned, forked, or quietly modified, nothing in the
+system notices, because nothing in the system was ever told what the correct
+configuration was.
+
+The usual responses are either too heavy or too weak. Monorepos solve the
+problem by eliminating it, at the cost of forcing unrelated work into one
+history. Package manifests and lockfiles solve it for dependency graphs, but
+they describe code that is consumed, not repositories that are governed.
+Signed tags attest to a point in one repository's history and say nothing
+about the collection.
+
+The Triadic Seal takes a narrower aim. It answers three questions, and keeps
+the answers separate so that each can fail independently and visibly:
+
+\begin{enumerate}[label=(\roman*),leftmargin=2.2em]
+  \item \textbf{What is supposed to be here?} --- the \Manifest{}.
+  \item \textbf{Who says so?} --- the \Signature{}.
+  \item \textbf{What is actually here, and how far has it moved?} --- the
+        \Seal{}.
+\end{enumerate}
+
+Keeping these apart is the whole design. A conflated ``signed snapshot''
+cannot distinguish a legitimate change that was never recorded from a
+recorded change that was never authorised; the triadic split makes both
+conditions nameable and separately detectable.
+
+\paragraph{Contributions.}
+\Cref{sec:related} places the protocol among existing supply-chain and
+transparency systems. \Cref{sec:pillars} defines the three pillars and their
+hash and signature relationships. \Cref{sec:metaseal} gives the \MetaSeal{}
+consolidation.
+\Cref{sec:cycle} specifies the binding cycle as an operational procedure.
+\Cref{sec:drift} states the drift predicates. \Cref{sec:threat} sets out the
+threat model, including the several things the protocol explicitly does not
+defend against. \Cref{sec:impl} describes the reference implementation.
+\Cref{sec:limitations} is candid about the protocol's limits.
+
+% ============================================================
+\section{Related Work}
+\label{sec:related}
+% ============================================================
+
+The Triadic Seal borrows freely and claims little novelty in its primitives.
+Its debts, and the boundaries between it and better-developed systems, are
+worth stating precisely.
+
+\paragraph{Hash-linked histories and timestamping.}
+Committing to a document by publishing its digest, and chaining such
+commitments over time, dates to Haber and Stornetta~\cite{haber1991};
+Merkle's tree construction~\cite{merkle1988} underlies the efficient variants.
+The meta-seal is a degenerate case: a linear sequence of commitments with no
+tree and no external witness. Certificate Transparency~\cite{rfc6962}
+demonstrates what the mature form looks like --- an append-only log with
+verifiable inclusion and consistency proofs --- and the gap between that and a
+sequence of commits in one repository is exactly the gap identified as N2 in
+\cref{sec:nonthreats}.
+
+\paragraph{Software supply-chain frameworks.}
+TUF~\cite{tuf2010} addresses a strictly harder problem: it assumes key
+compromise will happen and structures roles and thresholds so that it is
+survivable. The Triadic Seal has no such structure and does not survive
+operator key compromise at all. in-toto~\cite{intoto2019} attests to the
+steps of a supply chain and who performed them, which is closer in spirit to
+the \Signature{} pillar, but in-toto governs a \emph{build process} whereas
+the Triadic Seal governs \emph{collection membership} --- a coarser and much
+less demanding target. Sigstore~\cite{sigstore2022} removes long-lived key
+custody from the signer through ephemeral certificates and a transparency
+log; adopting it would substantially reduce the risk described in N1.
+
+\paragraph{Positioning.}
+None of these systems answers the specific question the Triadic Seal is built
+for --- ``what repositories is this research program made of, and has that set
+changed without anyone saying so?'' --- but each is stronger than the Triadic
+Seal in the areas where they overlap. The protocol's justification is
+operational cost, not cryptographic sophistication: it is small enough that a
+single researcher will actually run it every month.
+
+% ============================================================
+\section{The Three Pillars}
+\label{sec:pillars}
+% ============================================================
+
+Let $R = \{r_1,\dots,r_n\}$ be the governed collection of repositories, and
+let $\mathrm{H}$ denote SHA-256, as specified in FIPS 180-4~\cite{fips180-4}.
+
+\subsection{Pillar I --- \Manifest{} (Structure)}
+
+\begin{definition}[Manifest]
+\label{def:manifest}
+A \emph{manifest} $M$ is a canonically serialised record listing, for each
+$r_i \in R$: its name, its declared role, its governance boundary, and its
+integration status. The \emph{manifest hash} is $\hash{M}$.
+\end{definition}
+
+The manifest is normative, not descriptive. It states what the collection
+ought to be. Its hash is the fixed-point baseline against which every
+subsequent observation is compared, so canonical serialisation matters: field
+order, line endings, and encoding must be fixed, or $\hash{M}$ will change
+for reasons that have nothing to do with governance.
+
+\begin{remark}
+The reference implementation additionally emits a \emph{fixity manifest} --- a
+per-file SHA-256 listing of the Codex Root working tree, hashed as a whole.
+This is a different object from $M$: the fixity manifest describes one
+repository's bytes, whereas $M$ describes the collection's membership. Both
+are useful; conflating them is a common and costly error, because a fixity
+manifest changes on every commit while $M$ should change only when membership
+or roles change.
+\end{remark}
+
+\subsection{Pillar II --- \Signature{} (Integrity)}
+
+\begin{definition}[Signature]
+\label{def:signature}
+The \emph{signature} is $\sigma = \sign{M}{k}$, where $k$ is the private half
+of the \Operator{}'s long-lived signing key. Verification uses the
+corresponding public key and succeeds only if $M$ is bit-identical to the
+signed input.
+\end{definition}
+
+The signature supplies two things the hash alone cannot: \emph{attribution}
+(a named party asserted this configuration) and \emph{intent} (the assertion
+was deliberate, not a side effect of a script run). A hash proves that two
+byte strings match; only a signature proves that somebody meant it.
+
+The reference deployment uses an Ed25519 key~\cite{rfc8032} held by the
+\Operator{} and identified in published records by its OpenPGP fingerprint
+\digest{\operatorfingerprint}.
+
+\begin{remark}[On identifiers]
+\label{rem:identifier}
+A fingerprint is not a public key. The 160-bit value above identifies the key
+but cannot verify anything on its own; verification requires the 32-byte
+Ed25519 public key itself, distributed separately (\cref{sec:impl}). Records
+that print a fingerprint next to the word ``key'' invite the reader to
+believe they hold verification material when they do not. We keep the two
+terms distinct throughout.
+\end{remark}
+
+\subsection{Pillar III --- \Seal{} (State)}
+
+\begin{definition}[Seal]
+\label{def:seal}
+A \emph{seal} $S_t$ at binding time $t$ is a record of \emph{observed} state:
+for each $r_i$, its last-activity timestamp and commit count since the
+previous binding; plus the aggregate drift report of \cref{sec:drift} and the
+\Operator{}'s attestation. Its digest is $\hash{S_t}$.
+\end{definition}
+
+Where the manifest is normative, the seal is empirical. The seal is the only
+pillar that is expected to differ from one cycle to the next; a seal that
+never changes indicates a collection that is either finished or unobserved.
+
+% ============================================================
+\section{The Triadic Meta-Seal}
+\label{sec:metaseal}
+% ============================================================
+
+\begin{definition}[Meta-Seal]
+The \emph{meta-seal} at time $t$ is
+\[
+  T_t \;=\; \bigl\langle\, t,\; \hash{M},\; \hash{\sigma},\; \hash{S_t},\;
+              \mathrm{status},\; \mathrm{attestation} \,\bigr\rangle ,
+\]
+where $\mathrm{status} \in \{\textsc{triadic-stable},
+\textsc{drift-detected}, \textsc{compromised}\}$.
+\end{definition}
+
+$T_t$ records the three pillar digests rather than the pillars themselves, so
+it stays small and readable while remaining a complete commitment: any change
+to $M$, $\sigma$, or $S_t$ changes $T_t$.
+
+\begin{property}[Binding]
+If $T_t$ verifies and the underlying $M$, $\sigma$, $S_t$ hash to the
+recorded values, then at time $t$ the \Operator{} asserted structure $M$ and
+observed state $S_t$ together. Neither can be substituted without detection.
+\end{property}
+
+\begin{property}[Non-prevention]
+\label{prop:nonprevention}
+$T_t$ constrains nothing about $t' > t$. An adversary with write access to a
+governed repository can make arbitrary changes after a binding; the protocol
+guarantees only that the \emph{next} binding will observe them. The Triadic
+Seal is a detection mechanism, not an access control mechanism.
+\end{property}
+
+\Cref{prop:nonprevention} is stated as a property rather than buried in
+limitations because it is the single most likely thing for a reader to get
+wrong.
+
+\begin{table}[t]
+\centering
+\caption{Meta-seal $T_{t_0}$ for the initial binding, cycle \bindingcycle.}
+\label{tab:binding}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Pillar} & \textbf{Digest (SHA-256)} & \textbf{Status} \\
+\midrule
+I --- \Manifest{}  & \digest{E6C46688C9883703B4F2B324DC3248A4} & VERIFIED \\
+                   & \digest{E77E6D751746DCD87A509D1DBB2762D9} &          \\
+\addlinespace
+II --- \Signature{} & \digest{66FAB65A481E0FE3687CC839B7A33141} & VERIFIED \\
+                   & \digest{1D8401DA69BA18EE42AA4513B7CA5751} &          \\
+\addlinespace
+III --- \Seal{}     & \digest{58B16B0280F3DF2B4A463A1647AE606E} & VERIFIED \\
+                   & \digest{85B11E460FDD7092717A5D4BDF9145FD} &          \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:binding} reproduces the initial binding recorded in the Codex Root.
+Digests are split across two lines for typesetting only; the recorded values
+are the 64-character concatenations.
+
+% ============================================================
+\section{The Binding Cycle}
+\label{sec:cycle}
+% ============================================================
+
+Bindings are periodic, not event-driven. A monthly cadence is used in the
+reference deployment. The trade-off is explicit: a longer period means a
+longer window in which an undetected change can persist, while a shorter
+period means more operator signing events and more opportunities for the
+signing key to be exposed on an online machine.
+
+\begin{protocol}[Monthly binding]
+\label{prot:binding}
+\begin{enumerate}[leftmargin=2.4em]
+  \item \textbf{Collect.} For each $r_i \in R$, record last-activity
+        timestamp and commit count since the previous binding.
+  \item \textbf{Update.} Regenerate $M$ from current membership. If $M$
+        changed, the change must be independently justified before signing;
+        an unexplained manifest change is itself a drift indicator
+        (\cref{sec:drift}).
+  \item \textbf{Generate.} Emit $S_t$ with the drift report.
+  \item \textbf{Sign.} Produce $\sigma = \sign{M}{k}$ with the operator key.
+  \item \textbf{Consolidate.} Emit $T_t$ and commit all four artifacts to the
+        Codex Root in a single commit.
+\end{enumerate}
+\end{protocol}
+
+Step 5 is what makes the history append-only in practice rather than in
+principle: the artifacts are only as immutable as the commit history that
+carries them, which is why the Codex Root's history is the protocol's real
+trust anchor (\cref{sec:threat}).
+
+% ============================================================
+\section{Drift Detection}
+\label{sec:drift}
+% ============================================================
+
+\emph{Drift} is divergence between the normative manifest and observed
+reality. The following predicates each raise a drift flag on repository
+$r_i$ at binding time $t$:
+
+\begin{enumerate}[label=D\arabic*.,leftmargin=2.6em]
+  \item \textbf{Excess activity.} Commit count since the previous binding
+        exceeds a threshold $\theta$ ($\theta = 10$ in the reference
+        deployment).
+  \item \textbf{Dormancy.} No activity for more than $\delta$ days
+        ($\delta = 30$).
+  \item \textbf{Unverified structural change.} $\hash{M}$ changed without a
+        corresponding justified manifest update in \cref{prot:binding}
+        step~2.
+  \item \textbf{Signature failure.} $\sigma$ does not verify against $M$
+        under the operator public key.
+  \item \textbf{State anomaly.} Observed repository state is inconsistent
+        with its declared role or integration status.
+\end{enumerate}
+
+\begin{remark}[On D1 and D2]
+D1 and D2 are heuristics about \emph{attention}, not about correctness. A
+healthy, busy repository trips D1 every cycle; a finished one trips D2
+forever. They are deliberately noisy tripwires whose purpose is to force the
+operator to look, and they should be tuned per repository rather than
+globally. D3 and D4 are the predicates with security content: D4 in
+particular cannot be tripped by benign activity.
+\end{remark}
+
+A binding in which any predicate fires is recorded with status
+\textsc{drift-detected} rather than \textsc{triadic-stable}. Drift does not
+halt the cycle --- the binding still completes and is still signed --- because a
+signed record of a known-drifted state is more useful than no record.
+
+% ============================================================
+\section{Threat Model}
+\label{sec:threat}
+% ============================================================
+
+\subsection{What the protocol addresses}
+
+\begin{enumerate}[label=T\arabic*.,leftmargin=2.6em]
+  \item \textbf{Silent membership change.} A repository added to or removed
+        from the collection without record. Detected at the next binding via
+        $\hash{M}$ mismatch.
+  \item \textbf{Retroactive tampering with governance records.} Modifying a
+        past manifest or seal. Detected because $T_t$ commits to their
+        digests and $T_t$ itself is in the commit history.
+  \item \textbf{Repudiation.} An operator denying that a configuration was
+        authorised. Prevented by $\sigma$, to the extent that $k$ is
+        genuinely under sole operator control.
+  \item \textbf{Unattended decay.} Repositories drifting out of the program
+        without anyone noticing. Detected by D1--D2.
+\end{enumerate}
+
+\subsection{What the protocol does \emph{not} address}
+\label{sec:nonthreats}
+
+\begin{enumerate}[label=N\arabic*.,leftmargin=2.6em]
+  \item \textbf{Operator key compromise.} An adversary holding $k$ can
+        produce bindings indistinguishable from genuine ones. The protocol
+        has no threshold or multi-party signing, so this is a total
+        compromise, not a degraded mode. This is the dominant risk.
+  \item \textbf{Compromise of the Codex Root history.} An adversary who can
+        force-push to the Codex Root can rewrite the sequence of meta-seals.
+        Independent anchoring (publishing $\hash{T_t}$ to a witness outside
+        the repository) would mitigate this and is not currently done.
+  \item \textbf{Between-binding changes.} By \cref{prop:nonprevention}, the
+        entire inter-binding window is unprotected.
+  \item \textbf{Content correctness.} The protocol says nothing about
+        whether the code, data, or claims inside a governed repository are
+        correct. A perfectly triadic-stable collection can be entirely
+        wrong.
+  \item \textbf{Observation integrity.} The seal records what the collection
+        tool observed. An adversary who controls the observation environment
+        controls $S_t$.
+\end{enumerate}
+
+N1 and N2 together mean the protocol's security reduces to two conventional
+assumptions --- key secrecy and hosting-platform integrity --- neither of which
+the protocol itself strengthens. Its contribution is organisational: it makes
+the state of a sprawling collection legible and attributable at regular
+intervals.
+
+% ============================================================
+\section{Reference Implementation}
+\label{sec:impl}
+% ============================================================
+
+The ATUM\_ATOM Codex Root (\codexroot) implements the protocol with a small
+set of scripts and a fixed directory layout:
+
+\begin{itemize}[leftmargin=1.6em]
+  \item \texttt{.triadic/manifest.txt} --- the manifest $M$.
+  \item \texttt{.triadic/governance.md} --- the governance protocol, normative.
+  \item \texttt{codex/seals/seal\_*.txt} --- seals $S_t$.
+  \item \texttt{codex/seals/triadic\_seal\_*.txt} --- meta-seals $T_t$.
+  \item \texttt{manifests/fixity\_manifest\_*.txt} --- per-file fixity records.
+  \item \texttt{scripts/} --- manifest generation, binding, and export.
+\end{itemize}
+
+\subsection{Verification}
+
+Verifying a published binding requires the operator's Ed25519 public key,
+distributed independently of this repository. Given that key, a third party
+verifies a binding as follows.
+
+\noindent Confirm the meta-seal digest:
+\begin{lstlisting}
+sha256sum codex/seals/triadic_seal_20260621_104332.txt
+\end{lstlisting}
+
+\noindent Verify the manifest signature. For an OpenPGP-held Ed25519 key:
+\begin{lstlisting}
+gpg --verify .triadic/manifest.txt.sig .triadic/manifest.txt
+\end{lstlisting}
+
+\noindent For a raw Ed25519 key in PEM form:
+\begin{lstlisting}
+openssl pkeyutl -verify -pubin -inkey ed25519_pub.pem -rawin \
+    -sigfile .triadic/manifest.txt.sig -in .triadic/manifest.txt
+\end{lstlisting}
+
+\begin{remark}[Verification command hygiene]
+Ed25519 is a pure signature scheme: it hashes the message internally and must
+be handed the message itself, not a digest. The command
+\texttt{openssl dgst -sha256 -verify \dots}, which appears in some earlier
+ATUM\_ATOM documentation, describes a hash-then-sign workflow appropriate to
+RSA or ECDSA and will not verify an Ed25519 signature. The forms above are
+the correct ones. Publishing a verification command that cannot succeed is
+worse than publishing none, because a reader who runs it and sees a failure
+learns nothing about whether the artifact is genuine.
+\end{remark}
+
+\subsection{Governed collection}
+
+\begin{table}[t]
+\centering
+\caption{Governed repositories at cycle \bindingcycle.}
+\label{tab:repos}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Repository} & \textbf{Declared role} & \textbf{Status} \\
+\midrule
+Phoenix\_Ignition\_TOE      & Ceremonial framework, visualisation & ACTIVE \\
+Phoenix-2.0-Apex-Edition    & Quantum modelling engine            & ACTIVE \\
+UNI\_VERSE-                 & Universe-scale architecture         & ACTIVE \\
+TUA                         & Unified theoretical framework       & ACTIVE \\
+TOE                         & Theory-of-everything research       & ACTIVE \\
+Quantum                     & Quantum computing research          & ACTIVE \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:repos} lists the six governed repositories. ``Declared role'' is
+the operator's assertion recorded in $M$; it is not independently validated
+by the protocol, and \cref{sec:nonthreats} N4 applies.
+
+% ============================================================
+\section{Limitations and Future Work}
+\label{sec:limitations}
+% ============================================================
+
+\paragraph{Single point of failure.}
+One key, one operator, no threshold scheme. Splitting signing authority
+across $m$-of-$n$ holders, along the lines of TUF's role model~\cite{tuf2010},
+would remove the dominant risk of N1 at the cost of a materially heavier
+binding ceremony. Adopting keyless signing~\cite{sigstore2022} is the
+lighter-weight alternative.
+
+\paragraph{No external anchor.}
+Meta-seal digests are recorded only inside the repository whose history they
+are meant to protect. Publishing $\hash{T_t}$ to any independent, append-only
+witness~\cite{rfc6962} would close N2. This is the cheapest available
+improvement and should be done first.
+
+\paragraph{Unvalidated observation.}
+The collection step trusts its own execution environment (N5). Running it in
+a reproducible environment and signing the observation transcript would
+narrow the gap.
+
+\paragraph{Coarse drift predicates.}
+D1 and D2 use global thresholds where per-repository baselines would be more
+informative. Repositories differ enormously in expected commit rate, and a
+threshold that is a useful tripwire for one is pure noise for another.
+
+\paragraph{No formal treatment.}
+This paper gives an operational specification, not a proof. The binding
+property of \cref{sec:metaseal} follows straightforwardly from collision
+resistance and signature unforgeability, but is not stated as a reduction.
+
+% ============================================================
+\section{Conclusion}
+% ============================================================
+
+The Triadic Seal separates three questions that governance systems usually
+answer together and therefore answer badly: what a collection should contain,
+who vouched for it, and what it actually contains. Keeping the answers in
+distinct, individually hashed pillars, consolidated into one signed and
+committed meta-seal per cycle, yields a record that is cheap to produce and
+readable by a third party years later.
+
+The protocol's guarantees are narrow and worth restating plainly: it detects,
+it does not prevent; it attributes, it does not validate; and it inherits
+rather than improves the security of the key and the hosting platform beneath
+it. Within those bounds it turns an undocumented collection of repositories
+into something with a history that can be audited.
+
+% ============================================================
+\bibliographystyle{plain}
+\bibliography{references}
+% ============================================================
+
+\end{document}
